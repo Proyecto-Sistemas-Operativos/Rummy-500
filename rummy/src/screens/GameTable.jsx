@@ -3,6 +3,7 @@ import Deck from "../components/Deck";
 import DiscardPile from "../components/DiscardPile";
 import PlayerHand from "../components/PlayerHand";
 import PlayerSetup from "../components/PlayerSetup";
+import OpponentHand from "../components/OponentHand";
 
 const allSuits = ["hearts", "diamonds", "clubs", "spades"];
 const allValues = [
@@ -60,18 +61,20 @@ const getInitialPlayers = (numPlayers, deck) => {
 
 const GameTable = () => {
   const [numPlayers, setNumPlayers] = useState(null);
-  // Inicializa el mazo y reparte cartas solo una vez
+  const [dealer, setDealer] = useState(null);
   const [gameState, setGameState] = useState(null);
 
   React.useEffect(() => {
     if (numPlayers) {
+      const randomDealer = Math.floor(Math.random() * numPlayers);
+      setDealer(randomDealer);
       const deck = generateFullDeck(numPlayers);
       const { players, deck: newDeck } = getInitialPlayers(numPlayers, deck);
       setGameState({
         players,
         deck: newDeck,
         discardPile: [],
-        currentTurn: 0,
+        currentTurn: (randomDealer + 1) % numPlayers, // Mano es el de la izquierda del dealer
       });
     }
   }, [numPlayers]);
@@ -84,7 +87,6 @@ const GameTable = () => {
   // Si gameState aún no está listo, no renderices la mesa
   if (!gameState) return null;
 
-  // Ejemplo de función para robar carta (ajusta según tu lógica)
   const handleDrawCard = () => {
     if (gameState.deck.length === 0) return;
     const newDeck = [...gameState.deck];
@@ -100,29 +102,63 @@ const GameTable = () => {
 
   return (
     <div style={styles.table}>
-      <div style={styles.centerArea}>
-        <Deck
-          remaining={gameState.deck.length}
-          onDraw={handleDrawCard}
-          isActivePlayer={gameState.currentTurn === 0}
-        />
-        <DiscardPile
-          topCard={gameState.discardPile[gameState.discardPile.length - 1]}
-        />
+      <div style={{ marginBottom: 16 }}>
+        <b>Dealer:</b> {dealer !== null ? gameState.players[dealer].name : ""}
       </div>
-      <div style={styles.playersArea}>
-        {gameState.players.map((player, index) => (
-          <PlayerHand
-            key={index}
-            name={player.name}
-            cards={player.cards}
-            isCurrentPlayer={index === gameState.currentTurn}
+      <div style={styles.centerArea}>
+        <div style={styles.leftOpponent}>
+          <OpponentHand
+            name={
+              gameState.players[(gameState.currentTurn + 1) % numPlayers].name
+            }
+            cardCount={
+              gameState.players[(gameState.currentTurn + 1) % numPlayers].cards
+                .length
+            }
           />
-        ))}
+        </div>
+        <div style={styles.middleArea}>
+          {/* Arriba */}
+          <div style={styles.topOpponent}>
+            <OpponentHand
+              name={
+                gameState.players[(gameState.currentTurn + 2) % numPlayers].name
+              }
+              cardCount={
+                gameState.players[(gameState.currentTurn + 2) % numPlayers]
+                  .cards.length
+              }
+            />
+          </div>
+          <div style={styles.deckAndDiscard}>
+            <Deck
+              remaining={gameState.deck.length}
+              onDraw={handleDrawCard}
+              isActivePlayer={gameState.currentTurn === 0}
+            />
+            <DiscardPile
+              topCard={gameState.discardPile[gameState.discardPile.length - 1]}
+            />
+          </div>
+        </div>
+        <div style={styles.rightOpponent}>
+        <OpponentHand
+          name={gameState.players[(gameState.currentTurn + 3) % numPlayers].name}
+          cardCount={gameState.players[(gameState.currentTurn + 3) % numPlayers].cards.length}
+        />
       </div>
     </div>
-  );
-};
+    <div style={styles.myHandRow}>
+      <PlayerHand
+        name={gameState.players[gameState.currentTurn].name}
+        cards={gameState.players[gameState.currentTurn].cards}
+        isCurrentPlayer={true}
+      />
+    </div>
+  </div>
+);
+}
+      
 
 const styles = {
   table: {
@@ -138,11 +174,47 @@ const styles = {
     gap: "50px",
     marginBottom: "40px",
   },
-  playersArea: {
+  leftOpponent: {
+    flex: "0 0 160px",
     display: "flex",
-    overflowX: "auto",
-    gap: "20px",
-    padding: "10px",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rightOpponent: {
+    flex: "0 0 160px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  middleArea: {
+    flex: "1 1 auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topOpponent: {
+    marginBottom: "30px",
+  },
+  deckAndDiscard: {
+    display: "flex",
+    flexDirection: "row",
+    gap: "50px",
+    justifyContent: "center",
+    alignItems: "center",
+    maxWidth: "90vw", 
+  },
+  myHandRow: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%", 
+    //position: "fixed",
+    bottom: 0,
+    left: 0,
+    padding: "20px 0",
+    background: "rgba(10,143,8,0.95)",
+    zIndex: 10,
   },
 };
 

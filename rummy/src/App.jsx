@@ -1,4 +1,4 @@
-import GameTable from "./components/GameTable";
+import GameTable from "../src/screens/GameTable";
 import "./App.css";
 
 function App() {
